@@ -152,7 +152,115 @@ public class Main {
     }
 
     // ============================================================
-    //                         DASHBOARD
+    //                   DASHBOARD PERSONAL (ALUMNO)
+    // ============================================================
+    static class PersonalDashboard extends JFrame {
+
+        public PersonalDashboard() {
+            setTitle("Mi progreso — Autoescuela Rápida");
+            setSize(500, 450);
+            setLocationRelativeTo(null);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+            JPanel root = new JPanel(new BorderLayout(16, 16));
+            root.setBackground(new Color(15, 23, 42));
+            root.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            setContentPane(root);
+
+            String nombre = (currentUserName != null && !currentUserName.isEmpty()) ? currentUserName : "Usuario";
+
+            JPanel header = new JPanel(new BorderLayout());
+            header.setBackground(new Color(30, 64, 175));
+            header.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createEmptyBorder(12, 16, 12, 16),
+                    BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(56, 189, 248))
+            ));
+            JLabel title = new JLabel("Mi progreso — " + nombre);
+            title.setForeground(Color.WHITE);
+            title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+            header.add(title, BorderLayout.WEST);
+            JLabel subtitle = new JLabel("Tus estadísticas personales");
+            subtitle.setForeground(new Color(191, 219, 254));
+            subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            header.add(subtitle, BorderLayout.EAST);
+            root.add(header, BorderLayout.NORTH);
+
+            JPanel content = new JPanel(new BorderLayout(0, 12));
+            content.setOpaque(false);
+
+            int[] stats = currentUsuarioId > 0 ? DatabaseManager.getEstadisticasUsuario(currentUsuarioId) : new int[]{0, 0, 0};
+            int totalTests = stats[0];
+            int totalAprobados = stats[1];
+            int totalSuspendidos = stats[2];
+            double aprobadosPct = totalTests > 0 ? (totalAprobados * 100.0) / totalTests : 0;
+            double suspendidosPct = totalTests > 0 ? (totalSuspendidos * 100.0) / totalTests : 0;
+
+            JPanel cardStats = crearCardPersonal("Mis estadísticas");
+            JPanel statsGrid = new JPanel(new GridLayout(2, 1, 0, 12));
+            statsGrid.setOpaque(false);
+            JLabel lblAprob = new JLabel(String.format("Media aprobados: %.0f%% (%d de %d)", aprobadosPct, totalAprobados, totalTests));
+            lblAprob.setForeground(new Color(110, 231, 183));
+            lblAprob.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            statsGrid.add(lblAprob);
+            JLabel lblSusp = new JLabel(String.format("Media suspendidos: %.0f%% (%d de %d)", suspendidosPct, totalSuspendidos, totalTests));
+            lblSusp.setForeground(new Color(248, 113, 113));
+            lblSusp.setFont(new Font("Segoe UI", Font.BOLD, 16));
+            statsGrid.add(lblSusp);
+            cardStats.add(statsGrid, BorderLayout.CENTER);
+            content.add(cardStats, BorderLayout.NORTH);
+
+            JPanel cardHist = crearCardPersonal("Últimos tests realizados");
+            DefaultListModel<String> histModel = new DefaultListModel<>();
+            java.util.List<DatabaseManager.IntentoInfo> historial = currentUsuarioId > 0
+                    ? DatabaseManager.getHistorialIntentosUsuario(currentUsuarioId) : new java.util.ArrayList<>();
+            for (DatabaseManager.IntentoInfo i : historial) {
+                String estado = i.aprobado ? "APROBADO" : "SUSPENDIDO";
+                histModel.addElement(String.format("%s — %s — %d/%d preguntas", i.fecha, estado, i.aciertos, i.total));
+            }
+            if (historial.isEmpty()) histModel.addElement("Aún no hay tests realizados");
+            JList<String> histList = new JList<>(histModel);
+            histList.setBackground(new Color(15, 23, 42));
+            histList.setForeground(new Color(226, 232, 240));
+            histList.setSelectionBackground(new Color(30, 64, 175));
+            histList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            cardHist.add(new JScrollPane(histList), BorderLayout.CENTER);
+            content.add(cardHist, BorderLayout.CENTER);
+
+            JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+            footer.setOpaque(false);
+            JButton btnVolver = new JButton("Volver a seleccionar tipo de prueba");
+            btnVolver.setBackground(new Color(56, 189, 248));
+            btnVolver.setForeground(new Color(15, 23, 42));
+            btnVolver.setFocusPainted(false);
+            btnVolver.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            btnVolver.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+            btnVolver.addActionListener(e -> {
+                new LicenseSelectorWindow().setVisible(true);
+                dispose();
+            });
+            footer.add(btnVolver);
+            root.add(footer, BorderLayout.SOUTH);
+
+            root.add(content, BorderLayout.CENTER);
+        }
+
+        private JPanel crearCardPersonal(String titulo) {
+            JPanel card = new JPanel(new BorderLayout(8, 8));
+            card.setBackground(new Color(30, 41, 59));
+            card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(56, 189, 248), 1),
+                    BorderFactory.createEmptyBorder(12, 12, 12, 12)
+            ));
+            JLabel lbl = new JLabel(titulo);
+            lbl.setForeground(new Color(148, 163, 184));
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            card.add(lbl, BorderLayout.NORTH);
+            return card;
+        }
+    }
+
+    // ============================================================
+    //                         DASHBOARD ADMIN
     // ============================================================
     static class Dashboard extends JFrame {
 
@@ -183,10 +291,24 @@ public class Main {
             title.setFont(new Font("Segoe UI", Font.BOLD, 22));
             header.add(title, BorderLayout.WEST);
 
+            JPanel headerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            headerRight.setOpaque(false);
             JLabel subtitle = new JLabel("Autoescuela Rápida");
             subtitle.setForeground(new Color(191, 219, 254));
             subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-            header.add(subtitle, BorderLayout.EAST);
+            JButton btnLogin = new JButton("Volver al login");
+            btnLogin.setBackground(new Color(148, 163, 184));
+            btnLogin.setForeground(new Color(15, 23, 42));
+            btnLogin.setFocusPainted(false);
+            btnLogin.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            btnLogin.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+            btnLogin.addActionListener(e -> {
+                new LoginWindow().setVisible(true);
+                dispose();
+            });
+            headerRight.add(subtitle);
+            headerRight.add(btnLogin);
+            header.add(headerRight, BorderLayout.EAST);
 
             root.add(header, BorderLayout.NORTH);
 
@@ -1310,7 +1432,7 @@ public class Main {
                 JOptionPane.showMessageDialog(this,
                         "Test finalizado.\nAciertos: " + aciertos + " de " + preguntas.size());
 
-                new Dashboard().setVisible(true);
+                new PersonalDashboard().setVisible(true);
                 dispose();
                 return;
             }
